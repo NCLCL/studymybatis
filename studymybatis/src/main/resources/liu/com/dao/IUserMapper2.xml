@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--namespace里面写IUserDao的全限定类名-->
+<mapper namespace="liu.com.dao.IUserDao2">
+    <!--配置结果的类名和实体类的属性名的对应关系-->
+    <resultMap id="userMap2" type="liu.com.domian.User2">
+        <!--主键字段的对应-->
+        <!--其中Property 一定要对应实体类中的属性名，其中column一定要对应数据库的列名2-->
+        <id property="userId" column="id"></id>
+        <!--非主键字段的对应-->
+        <result property="userName" column="username"></result>
+        <result property="userAge" column="age"></result>
+        <result property="userAddress" column="address"></result>
+        <result property="userBirthday" column="birthday"></result>
+    </resultMap>
+    <!--了解的内容：抽取重复的sql语句 注意后面不要写分号-->
+    <sql id="defaultUser">
+        select * from user
+    </sql>
+
+
+    <!--select 里面的id要对应dao层的方法名-->
+    <select id="findall" resultMap="userMap2">
+        <!--select * from user;-->
+        <include refid="defaultUser"></include>
+       <!--SELECT  id as userId,username as userName,age as userAge,birthday as userBirthday,address as userAddress from  USER ;-->
+
+    </select>
+    <!--保存用户-->
+    <!--parameterType 参数的类型 其中的内容要按照实体的属性名称编写-->
+    <insert id="saveuser" parameterType="liu.com.domian.User2">
+        <!--配置插入操作后，获取插入数据的id-->
+        <!--keyProperty是Id的属性名，对应实体类的，可以keyColumn id的类名，对应的表名,order表示什么时候执行该操作-->
+        <selectKey keyProperty="userId" keyColumn="id" resultType="int" order="AFTER">
+            select last_insert_id();
+        </selectKey>
+        insert into user (username,address,birthday,age)values(#{userName},#{userAddress},#{userBirthday},#{userAge})
+
+    </insert>
+    <!--更新用户-->
+    <update id="updateuser" parameterType="liu.com.domian.User2">
+        update user set username=#{username},address=#{address},birthday=#{birthday},age=#{age} where id=#{id}
+
+    </update>
+    <!--根据id来删除用户-->
+    <delete id="deleteuser" parameterType="int">
+        /*因为dao层的这个方法只有一个参数，所以这里的参数只是一个站位符*/
+        delete from user where id=#{aid};
+    </delete>
+    <!--根据用户的id来查找用户-->
+    <select id="findById" parameterType="INT" resultMap="userMap2">
+        select * from user where id=#{id};
+    </select>
+    <!--根据用户的name模糊查训-->
+    <!--此处要注意百分号，要是在sql语句中没有写百分号要在查询参数的地方传入,
+    若是使用了单引号此处的传参的占位形式要由#{vaule}变成${value}
+
+    -->
+    <select id="findByName" parameterType="String" resultType="liu.com.domian.User2">
+        <!--错误写法-->
+        <!--select * from user where username like '#{value}%'-->
+        select * from user where username like '%${value}%'
+    </select>
+    <!--获取用户的总记录条数-->
+    <select id="selectUserCount" resultType="INT">
+        select count(id) from user;
+    </select>
+    <!--根据查询条件进行查询，条件被封装在了一个对象里-->
+    <select id="findUserByVo" parameterType="liu.com.domian.QueryVo" resultType="liu.com.domian.User2">
+        select * from user where username like '%${user2.userName}%'
+    </select>
+    <!--根据条件查询-->
+    <select id="findUserByCondition" resultMap="userMap2" parameterType="user">
+        select * from user where 1=1
+        <if test="userName !=null" >
+            <!--and后面的属性名要与数据库的相同,后面要跟实体层的属性名一致-->
+            and userName=#{userName}
+        </if>
+        <if test="userAge !=null">
+            and age=#{userAge}
+        </if>
+    </select>
+    <!--/*根据queryVo中提供的ids 提供子查询*/-->
+    <select id="findUserIds" resultMap="userMap2" parameterType="queryVo">
+        select *  from user
+        <where>
+            <if test="ids !=null and ids.size()>0">
+                <foreach collection="ids" open="and id in (" close=")" item="uid" separator=",">
+                    <!--这里的#{id}必须与item=“id”里面的值一样-->
+                    id=#{uid}
+                </foreach>
+            </if>
+        </where>
+
+
+
+    </select>
+
+</mapper>
